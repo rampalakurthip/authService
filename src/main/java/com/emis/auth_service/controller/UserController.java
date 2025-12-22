@@ -11,26 +11,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("api/v1/users")
 public class UserController {
-    @Autowired
-    private KeycloakProperties keycloakProperties;
 
-    @Autowired
-    private KeycloakClient keycloakClient;
-
-    @PostMapping("/token")
-    public KeycloakTokenResponse generateToken() {
-        try {
-            KeycloakTokenResponse  keycloakTokenResponse=  keycloakClient.getToken(
-                    keycloakProperties.realmName(),
-                    keycloakProperties.webClientId(),
-                    keycloakProperties.webClientSecret(),
-                    keycloakProperties.grantType(),
-                    keycloakProperties.adminUsername()
-            );
-            return keycloakTokenResponse;
-        } catch (WebClientRequestException  e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 }

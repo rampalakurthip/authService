@@ -8,10 +8,10 @@ public record KeycloakTokenResponse(
         String accessToken,
 
         @JsonProperty("expires_in")
-        int expiresIn,
+        Integer expiresIn,
 
         @JsonProperty("refresh_expires_in")
-        int refreshExpiresIn,
+        Integer refreshExpiresIn,
 
         @JsonProperty("refresh_token")
         String refreshToken,
@@ -20,10 +20,12 @@ public record KeycloakTokenResponse(
         String tokenType,
 
         @JsonProperty("not-before-policy")
-        long notBeforePolicy,
+        Long notBeforePolicy,
 
         @JsonProperty("session_state")
         String sessionState,
 
         String scope
+
+
 ) {}
