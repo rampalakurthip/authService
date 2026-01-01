@@ -34,4 +34,39 @@ public interface KeycloakClient {
             @RequestHeader("Authorization") String adminToken,
             @RequestBody KeycloakUserCreateRequest userData
     );
+ // validate token
+    @PostExchange(
+            value = "/realms/{realm}/protocol/openid-connect/token/introspect",
+            contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE
+    )
+    ResponseEntity<Object> introspectToken(
+            @PathVariable String realm,
+            @RequestParam("client_id") String clientId,
+            @RequestParam("client_secret") String clientSecret,
+            @RequestParam("token") String token
+    );
+
+    @PostExchange(
+            value = "/realms/{realm}/protocol/openid-connect/token",
+            contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE
+    )
+    ResponseEntity<Object> refreshToken(
+            @PathVariable String realm,
+            @RequestParam("client_id") String clientId,
+            @RequestParam("client_secret") String clientSecret,
+            @RequestParam("grant_type") String grantType,   // use "refresh_token"
+            @RequestParam("refresh_token") String refreshToken
+    );
+    @PostExchange(
+            value = "/realms/{realm}/protocol/openid-connect/logout",
+            contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE
+    )
+    ResponseEntity<Object> logout(
+            @PathVariable String realm,
+            @RequestParam("client_id") String clientId,
+            @RequestParam("client_secret") String clientSecret,
+            @RequestParam("refresh_token") String refreshToken
+    );
+
+
 }

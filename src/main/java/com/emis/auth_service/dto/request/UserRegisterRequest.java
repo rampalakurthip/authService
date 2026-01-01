@@ -1,25 +1,25 @@
 package com.emis.auth_service.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
-@Data
-@AllArgsConstructor
+import java.util.List;
+
+@Getter
+@Setter
 @NoArgsConstructor
-public class UserSignUpDTO {
+@AllArgsConstructor
+@Builder
+public class UserRegisterRequest {
+    private String staffId;
+    private String staffEmail;
     private String username;
     @Email(message = "Invalid email format")
     @NotBlank(message = "Email is required")
-    private String email;
-    private String firstName;
-    private String lastName;
-    @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Mobile number must be in E.164 format (e.g. +1234567890)")
-    private String mobileNumber;
-    @NotBlank(message = "Password is required")
+    private String loginEmail;
     @NotBlank(message = "Password is required")
     @Pattern(
             regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$",
@@ -28,4 +28,10 @@ public class UserSignUpDTO {
     @ToString.Exclude
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
+    private String confirmPassword;
+    private String firstName;
+    private String lastName;
+    private String mobileNumber;
+    private List<String> roles;
+    private String status;
 }

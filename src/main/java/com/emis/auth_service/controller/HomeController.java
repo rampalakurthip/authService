@@ -5,6 +5,7 @@ import com.emis.auth_service.provider.keycloak.client.KeycloakClient;
 import com.emis.auth_service.provider.keycloak.client.request.KeycloakUserCreateRequest;
 import com.emis.auth_service.provider.keycloak.client.response.KeycloakErrorResponse;
 import com.emis.auth_service.provider.keycloak.client.response.KeycloakTokenResponse;
+import com.emis.auth_service.utils.Authorize;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -60,8 +61,8 @@ public class HomeController {
 
 
     @GetMapping()
+    @Authorize()
     public String home() {
         return "EMIS Auth Service is running.....";
     }
-
 }

@@ -1,40 +1,125 @@
 package com.emis.auth_service.services.impl;
 
-import com.emis.auth_service.dto.request.UserSignUpDTO;
+import com.emis.auth_service.dto.request.UserRegisterRequest;
 import com.emis.auth_service.model.UserModel;
 import com.emis.auth_service.repository.UserRepository;
+import com.emis.auth_service.dto.response.PaginationInfo;
+import com.emis.auth_service.dto.response.UserListResponse;
 import com.emis.auth_service.services.UserService;
-
-import com.emis.auth_service.utils.PasswordEncryptionUtil;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.emis.auth_service.dto.response.UserResponse;
+import com.emis.auth_service.dto.response.UserSummary;
 
+
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-@Slf4j
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class UserServiceImpl implements UserService {
 
-
-    @Autowired
-    private UserRepository userRepository;
-
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
-    public UserSignUpDTO SignUp(UserSignUpDTO userSignUpDTO) {
-        log.info("request to sign up user: {}", userSignUpDTO);
-        var userModel = new UserModel();
-        userModel.setUserId(UUID.randomUUID());
-        mapUserDTOToEntity(userModel, userSignUpDTO);
-        userRepository.save(userModel);
-        return null;
+    public UserResponse registerUser(UserRegisterRequest request) {
+        // Validate password match
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("Passwords do not match");
+        }
+
+        // Check uniqueness
+        if (userRepository.findByUsernameIgnoreCase(request.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already exists");
+        }
+        if (userRepository.findByLoginEmailIgnoreCase(request.getLoginEmail()).isPresent()) {
+            throw new IllegalArgumentException("Login email already exists");
+        }
+        if (userRepository.findByStaffId(request.getStaffId()).isPresent()) {
+            throw new IllegalArgumentException("Staff ID already exists");
+        }
+        if (userRepository.findByStaffEmailIgnoreCase(request.getStaffEmail()).isPresent()) {
+            throw new IllegalArgumentException("Staff email already exists");
+        }
+
+        UserModel user = UserModel.builder()
+                .staffId(request.getStaffId())
+                .staffEmail(request.getStaffEmail())
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .fullName(request.getFirstName() + " " + request.getLastName())
+                .username(request.getUsername())
+                .loginEmail(request.getLoginEmail())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .mobileNumber(request.getMobileNumber())
+                .roles(request.getRoles() != null ? request.getRoles() : List.of())
+                .status(request.getStatus() != null ? request.getStatus() : "ACTIVE")
+                .isActive(true)
+                .build();
+
+        UserModel saved = userRepository.save(user);
+        return toUserResponse(saved);
     }
 
-    private void mapUserDTOToEntity(UserModel userModel, UserSignUpDTO userSignUpDTO) {
-        userModel.setFirstName(userSignUpDTO.getFirstName());
-        userModel.setLastName(userSignUpDTO.getLastName());
-        userModel.setEmail(userSignUpDTO.getEmail());
-        userModel.setPasswordHash(PasswordEncryptionUtil.encryptPassword(userSignUpDTO.getPassword()));
+    @Override
+    @Transactional(readOnly = true)
+    public UserListResponse getUsers(String search, String role, String status, Pageable pageable) {
+        Page<UserModel> usersPage = userRepository.findUsersWithFilters(search, role, status, pageable);
+
+        UserListResponse response = new UserListResponse();
+        
+        // Summary
+        UserSummary summary = UserSummary.builder()
+                .totalUsers(usersPage.getTotalElements())
+                .activeUsers(countActiveUsers())
+                .inactiveUsers(usersPage.getTotalElements() - countActiveUsers())
+                .lastUpdated(LocalDateTime.now())
+                .build();
+        response.setSummary(summary);
+
+        // Users
+        List<UserResponse> userResponses = usersPage.getContent().stream()
+                .map(this::toUserResponse)
+                .collect(Collectors.toList());
+        response.setUsers(userResponses);
+
+        // Pagination
+        PaginationInfo pagination = PaginationInfo.builder()
+                .page(pageable.getPageNumber() + 1)
+                .size(pageable.getPageSize())
+                .total(usersPage.getTotalElements())
+                .build();
+        response.setPagination(pagination);
+
+        return response;
+    }
+
+    private UserResponse toUserResponse(UserModel user) {
+        return UserResponse.builder()
+                .id(user.getUserId())
+                .staffId(user.getStaffId())
+                .staffEmail(user.getStaffEmail())
+                .fullName(user.getFullName())
+                .username(user.getUsername())
+                .loginEmail(user.getLoginEmail())
+                .roles(user.getRoles())
+                .status(user.getStatus())
+                .createdAt(user.getCreatedAt())
+                .lastLoginAt(user.getLastLoginAt())
+                .build();
+    }
+
+    private long countActiveUsers() {
+        // TODO: Implement real count query
+        return 20L;
     }
 }
