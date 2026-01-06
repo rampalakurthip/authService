@@ -1,6 +1,7 @@
 package com.emis.auth_service.model;
 
 
+import com.emis.auth_service.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,14 +15,19 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "user_roles")
+@Table(name = "auth_service_user_roles")
 public class UserRoleModel {
 
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
-    private String id; // e.g. "role-admin"
+    @GeneratedValue(strategy = GenerationType.IDENTITY)  // Auto-increment integer
+    @Column(name = "role_id", nullable = false)
+    private Long id;
 
-    @Column(name = "name", nullable = false, unique = true, length = 150)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role_code", nullable = false, unique = true, length = 50)
+    private UserRole roleCode;
+
+    @Column(name = "name", nullable = false ,length = 150)
     private String name;
 
     @Column(name = "description", length = 500)

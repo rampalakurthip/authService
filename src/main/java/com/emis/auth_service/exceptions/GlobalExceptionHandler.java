@@ -1,5 +1,6 @@
 package com.emis.auth_service.exceptions;
 
+import com.emis.auth_service.dto.response.AuthBaseResponse;
 import com.emis.auth_service.dto.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.emis.auth_service.constants.AuthServiceConstants.API_FAILED_MESSAGE;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -51,4 +54,18 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(err);
     }
+
+    @ExceptionHandler(SomethingWentWrongException.class)
+    public ResponseEntity<AuthBaseResponse<?>> handleSomethingWentWrong(SomethingWentWrongException ex) {
+        AuthBaseResponse<Object> response = AuthBaseResponse.builder()
+                .data(null)
+                .message(API_FAILED_MESSAGE)
+                .errorMessage(ex.getMessage())
+                .errorDescription(ex.getErrMessage())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+
 }

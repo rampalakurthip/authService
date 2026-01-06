@@ -1,15 +1,18 @@
 package com.emis.auth_service.services.impl;
 
 import com.emis.auth_service.dto.request.UserRegisterRequest;
+import com.emis.auth_service.enums.UserRole;
 import com.emis.auth_service.model.UserModel;
 import com.emis.auth_service.repository.UserRepository;
 import com.emis.auth_service.dto.response.PaginationInfo;
 import com.emis.auth_service.dto.response.UserListResponse;
 import com.emis.auth_service.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +55,7 @@ public class UserServiceImpl implements UserService {
         }
 
         UserModel user = UserModel.builder()
+                .userId(UUID.randomUUID())
                 .staffId(request.getStaffId())
                 .staffEmail(request.getStaffEmail())
                 .firstName(request.getFirstName())
@@ -59,9 +63,10 @@ public class UserServiceImpl implements UserService {
                 .fullName(request.getFirstName() + " " + request.getLastName())
                 .username(request.getUsername())
                 .loginEmail(request.getLoginEmail())
+                .emailVerified(StringUtils.isNotEmpty(request.getLoginEmail()))
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .mobileNumber(request.getMobileNumber())
-                .roles(request.getRoles() != null ? request.getRoles() : List.of())
+                .roles(UserRole.fromLabels(request.getRoles()))
                 .status(request.getStatus() != null ? request.getStatus() : "ACTIVE")
                 .isActive(true)
                 .build();
@@ -72,8 +77,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserListResponse getUsers(String search, String role, String status, Pageable pageable) {
-        Page<UserModel> usersPage = userRepository.findUsersWithFilters(search, role, status, pageable);
+    public UserListResponse getUsers(String search, String roleCode, String status, Pageable pageable) {
+        UserRole roleEnum = null;
+        if (StringUtils.isNotEmpty(roleCode)) {
+            roleEnum = UserRole.fromCode(roleCode);
+        }
+        Page<UserModel> usersPage = userRepository.findUsersWithFilters(search, roleEnum, status, pageable);
 
         UserListResponse response = new UserListResponse();
         
@@ -111,7 +120,7 @@ public class UserServiceImpl implements UserService {
                 .fullName(user.getFullName())
                 .username(user.getUsername())
                 .loginEmail(user.getLoginEmail())
-                .roles(user.getRoles())
+                .roles(UserRole.toLabels(user.getRoles()))
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
                 .lastLoginAt(user.getLastLoginAt())
@@ -119,7 +128,6 @@ public class UserServiceImpl implements UserService {
     }
 
     private long countActiveUsers() {
-        // TODO: Implement real count query
-        return 20L;
+        return userRepository.countActiveUsers();
     }
 }

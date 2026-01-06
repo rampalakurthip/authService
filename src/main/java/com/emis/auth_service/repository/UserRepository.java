@@ -1,5 +1,6 @@
 package com.emis.auth_service.repository;
 
+import com.emis.auth_service.enums.UserRole;
 import com.emis.auth_service.model.UserModel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,16 +25,30 @@ public interface UserRepository extends JpaRepository<UserModel, UUID> {
                 .or(() -> findByLoginEmailIgnoreCase(usernameOrEmail));
     }
 
-    @Query("SELECT u FROM UserModel u WHERE " +
-            "(:search IS NULL OR " +
-            " LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            " LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            " LOWER(u.loginEmail) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            " LOWER(u.staffEmail) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-            "AND (:role IS NULL OR :role MEMBER OF u.roles) " +  // ← NOW WORKS!
-            "AND (:status IS NULL OR u.status = :status)")
+    // ✅ NEW: For activeUsers count in RoleService
+    @Query("SELECT COUNT(u) FROM UserModel u WHERE u.status = :status")
+    long countByStatus(@Param("status") String status);
+
+    // ✅ BONUS: Count active users directly (most common)
+    default long countActiveUsers() {
+        return countByStatus("ACTIVE");
+    }
+
+    @Query("""
+       SELECT u FROM UserModel u
+       WHERE (:search IS NULL OR 
+              LOWER(u.fullName)    LIKE LOWER(CONCAT('%', :search, '%')) OR
+              LOWER(u.username)    LIKE LOWER(CONCAT('%', :search, '%')) OR
+              LOWER(u.loginEmail)  LIKE LOWER(CONCAT('%', :search, '%')) OR
+              LOWER(u.staffEmail)  LIKE LOWER(CONCAT('%', :search, '%')))
+         AND (:status IS NULL OR u.status = :status)
+         AND (:roleCode IS NULL OR EXISTS (
+                SELECT 1 FROM u.roles r
+                WHERE r = :roleCode
+           ))
+       """)
     Page<UserModel> findUsersWithFilters(@Param("search") String search,
-                                         @Param("role") String role,
+                                         @Param("roleCode") UserRole roleCode,
                                          @Param("status") String status,
                                          Pageable pageable);
 }

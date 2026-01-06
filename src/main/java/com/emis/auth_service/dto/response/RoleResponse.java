@@ -12,7 +12,8 @@ import java.util.List;
 @AllArgsConstructor
 public class RoleResponse {
 
-    private String id;
+    private Long id;
+    private String roleCode;
     private String name;
     private String description;
     private List<String> modulesAccessible;

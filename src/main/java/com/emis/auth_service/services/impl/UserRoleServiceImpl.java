@@ -3,36 +3,43 @@ package com.emis.auth_service.services.impl;
 import com.emis.auth_service.dto.request.RoleCreateRequest;
 import com.emis.auth_service.dto.response.RoleListResponse;
 import com.emis.auth_service.dto.response.RoleResponse;
+import com.emis.auth_service.enums.UserRole;
+import com.emis.auth_service.exceptions.SomethingWentWrongException;
 import com.emis.auth_service.model.UserRoleModel;
+import com.emis.auth_service.repository.UserRepository;
 import com.emis.auth_service.repository.UserRoleRepository;
 import com.emis.auth_service.services.UserRoleService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 
+@Slf4j
 @Service
 @Transactional
 public class UserRoleServiceImpl implements UserRoleService {
 
     private final UserRoleRepository roleRepository;
+    private final UserRepository userRepository;
 
-    public UserRoleServiceImpl(UserRoleRepository roleRepository) {
+    public UserRoleServiceImpl(UserRoleRepository roleRepository, UserRepository userRepository) {
+        this.userRepository = userRepository;
         this.roleRepository = roleRepository;
     }
 
     public RoleResponse createRole(RoleCreateRequest request) {
         UserRoleModel role = new UserRoleModel();
-
-        // Generate ID – you can adjust this to your convention
-        String generatedId = "role-" + request.name()
-                .toLowerCase()
+        // roleCode generation for future use
+        String roleCode = request.name()
+                .toUpperCase()
                 .replaceAll("\\s+", "-");
-
-        role.setId(generatedId);
+        role.setRoleCode(UserRole.fromLabel(request.name()));
         role.setName(request.name());
         role.setDescription(request.description());
         role.setModulesAccessible(
@@ -51,34 +58,39 @@ public class UserRoleServiceImpl implements UserRoleService {
 
     @Transactional(readOnly = true)
     public RoleListResponse getAllRolesWithStats() {
-        List<UserRoleModel> all = roleRepository.findAll();
+        log.info("Fetching all user roles with stats");
+        try {
+            List<UserRoleModel> all = roleRepository.findAll();
+            RoleListResponse response = new RoleListResponse();
+            response.setTotalRoles(all.size());
 
-        RoleListResponse response = new RoleListResponse();
-        response.setTotalRoles(all.size());
+            // ✅ REAL activeUsers logic using UserRepository
+            response.setActiveUsers(userRepository.countActiveUsers());
 
-        // Placeholder: plug in actual active user count when user service is ready
-        response.setActiveUsers(23L); // hard-coded to match your example for now
+            // lastModified = max(lastModifiedAt)
+            Instant lastModified = all.stream()
+                    .map(UserRoleModel::getLastModifiedAt)
+                    .filter(Objects::nonNull)
+                    .max(Comparator.naturalOrder())
+                    .orElse(Instant.now());
 
-        // lastModified = max(lastModifiedAt)
-        Instant lastModified = all.stream()
-                .map(UserRoleModel::getLastModifiedAt)
-                .filter(i -> i != null)
-                .max(Comparator.naturalOrder())
-                .orElse(null);
+            response.setLastModified(lastModified);
+            List<RoleResponse> roleResponses = all.stream()
+                    .map(this::toRoleResponse)
+                    .toList();
+            response.setRoles(roleResponses);
+            return response;
 
-        response.setLastModified(lastModified);
+        } catch (Exception e) {
+            throw  new SomethingWentWrongException("GET:/api/v1/user/roles", e.getMessage());
+        }
 
-        List<RoleResponse> roleResponses = all.stream()
-                .map(this::toRoleResponse)
-                .toList();
-        response.setRoles(roleResponses);
-
-        return response;
     }
 
     private RoleResponse toRoleResponse(UserRoleModel role) {
         RoleResponse dto = new RoleResponse();
         dto.setId(role.getId());
+        dto.setRoleCode(role.getRoleCode().name());
         dto.setName(role.getName());
         dto.setDescription(role.getDescription());
         dto.setModulesAccessible(role.getModulesAccessible());

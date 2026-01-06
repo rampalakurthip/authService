@@ -1,5 +1,6 @@
 package com.emis.auth_service.model;
 
+import com.emis.auth_service.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -19,10 +20,10 @@ import java.util.UUID;
 @Builder
 @Entity
 @Table(
-        name = "users",
+        name = "auth_service_users",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uq_users_username", columnNames = "username"),
-                @UniqueConstraint(name = "uq_users_email", columnNames = "email"),
+                @UniqueConstraint(name = "uq_users_login_email", columnNames = "login_email"),
                 @UniqueConstraint(name = "uq_users_staff_id", columnNames = "staff_id"),
                 @UniqueConstraint(name = "uq_users_mobile", columnNames = "mobile_number")
         },
@@ -34,7 +35,6 @@ import java.util.UUID;
 public class UserModel {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "user_id", updatable = false, nullable = false)
     private UUID userId;
 
@@ -74,9 +74,9 @@ public class UserModel {
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id")
     )
-    @Column(name = "role_name", length = 100)
-    @Builder.Default
-    private List<String> roles = new ArrayList<>();
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role_name", length = 50, nullable = false)
+    private List<UserRole> roles = new ArrayList<>();
 
     /* ===================== Status & Audit ===================== */
     @Column(name = "status", nullable = false, length = 20)
@@ -91,7 +91,7 @@ public class UserModel {
 
     /* ===================== Password Management ===================== */
     @CreationTimestamp
-    @Column(name = "password_changed_at", nullable = false)
+    @Column(name = "password_changed_at")
     private LocalDateTime passwordChangedAt;
 
     /* ===================== Timestamps ===================== */
@@ -103,7 +103,7 @@ public class UserModel {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "failed_login_attempts", nullable = false)
+    @Column(name = "failed_login_attempts" )
     private Integer failedLoginAttempts = 0;
 
     @Column(name = "account_locked_until")
@@ -112,7 +112,7 @@ public class UserModel {
     @Column(name = "email_verified", nullable = false)
     private Boolean emailVerified = false;
 
-    @Column(name = "mobile_verified", nullable = false)
+    @Column(name = "mobile_verified")
     private Boolean mobileVerified = false;
 
     /* ===================== Metadata ===================== */
