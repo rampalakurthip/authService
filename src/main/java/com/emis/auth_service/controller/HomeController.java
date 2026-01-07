@@ -21,47 +21,7 @@ import tools.jackson.databind.ObjectMapper;
 @RequestMapping()
 public class HomeController {
 
-    @Autowired
-    private KeycloakProperties keycloakProperties;
-
-    @Autowired
-    private KeycloakClient keycloakClient;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @PostMapping("/token")
-    public KeycloakTokenResponse generateToken(@RequestBody() KeycloakUserCreateRequest keycloakUserCreateRequest) {
-        ResponseEntity<Object> res;
-
-        try {
-            res = keycloakClient.getToken(
-                    keycloakProperties.realmName(),
-                    keycloakProperties.webClientId(),
-                    keycloakProperties.webClientSecret(),
-                    keycloakProperties.grantType(),
-                    keycloakProperties.adminUsername()
-            );
-            KeycloakTokenResponse response = null;
-            if (res.getStatusCode().is2xxSuccessful()) {
-                 response =  objectMapper.convertValue(
-                        res.getBody(),
-                        KeycloakTokenResponse.class
-                );
-            }
-            keycloakClient.createUser(keycloakProperties.realmName(),"Bearer "+response.accessToken(),keycloakUserCreateRequest);
-        } catch (HttpClientErrorException ex) {
-            log.error("Keycloak token request failed: status={}, body={}", ex.getStatusCode(), ex.getResponseBodyAs(KeycloakErrorResponse.class));
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid credentials or token");
-        }
-        return null;
-    }
-
-
-
-
     @GetMapping()
-    @Authorize()
     public String home() {
         return "EMIS Auth Service is running.....";
     }

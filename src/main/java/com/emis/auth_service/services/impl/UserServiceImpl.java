@@ -3,6 +3,9 @@ package com.emis.auth_service.services.impl;
 import com.emis.auth_service.dto.request.UserRegisterRequest;
 import com.emis.auth_service.enums.UserRole;
 import com.emis.auth_service.model.UserModel;
+import com.emis.auth_service.provider.keycloak.KeycloakAuthProvider;
+import com.emis.auth_service.provider.keycloak.client.KeycloakClient;
+import com.emis.auth_service.provider.keycloak.client.request.KeycloakUserCreateRequest;
 import com.emis.auth_service.repository.UserRepository;
 import com.emis.auth_service.dto.response.PaginationInfo;
 import com.emis.auth_service.dto.response.UserListResponse;
@@ -12,12 +15,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.emis.auth_service.dto.response.UserResponse;
 import com.emis.auth_service.dto.response.UserSummary;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 
 import java.time.LocalDateTime;
@@ -32,6 +37,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final KeycloakAuthProvider keycloakAuthProvider;
 
     @Override
     public UserResponse registerUser(UserRegisterRequest request) {
@@ -53,9 +59,11 @@ public class UserServiceImpl implements UserService {
         if (userRepository.findByStaffEmailIgnoreCase(request.getStaffEmail()).isPresent()) {
             throw new IllegalArgumentException("Staff email already exists");
         }
+        KeycloakUserCreateRequest kcUser = toKeycloakUser(request);
+        String keycloakUserId = keycloakAuthProvider.createUserInKeycloak(kcUser);
 
         UserModel user = UserModel.builder()
-                .userId(UUID.randomUUID())
+                .userId(keycloakUserId)//  uuid jwt token sid
                 .staffId(request.getStaffId())
                 .staffEmail(request.getStaffEmail())
                 .firstName(request.getFirstName())
@@ -112,6 +120,19 @@ public class UserServiceImpl implements UserService {
         return response;
     }
 
+    @Override
+    public UserResponse findByKeycloakUserId(String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+
+        // 1) Get Keycloak userId from token
+        String keycloakUserId = keycloakAuthProvider.validateTokenGetUid(token);
+        return toUserResponse(userRepository.findByUserId(keycloakUserId) // ✅ String PK
+                .orElseThrow(() -> new InternalAuthenticationServiceException(
+                        "User not found for Keycloak ID: " + keycloakUserId
+                )));
+
+    }
+
     private UserResponse toUserResponse(UserModel user) {
         return UserResponse.builder()
                 .id(user.getUserId())
@@ -130,4 +151,15 @@ public class UserServiceImpl implements UserService {
     private long countActiveUsers() {
         return userRepository.countActiveUsers();
     }
+    private KeycloakUserCreateRequest toKeycloakUser(UserRegisterRequest request) {
+        return KeycloakUserCreateRequest.builder()
+                .username(request.getUsername())
+                .email(request.getLoginEmail())
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .enabled(true)
+                .emailVerified(true)
+                .build();
+    }
+
 }

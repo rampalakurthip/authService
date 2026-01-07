@@ -8,6 +8,7 @@ public record KeycloakProperties(
         String realmName,
         String grantType,
         String adminClientId,
+        String adminClientSecret,
         String adminUsername,
         String webClientId,
         String webClientSecret

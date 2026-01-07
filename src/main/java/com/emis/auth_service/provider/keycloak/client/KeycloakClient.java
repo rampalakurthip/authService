@@ -17,7 +17,7 @@ import org.springframework.web.service.annotation.PostExchange;
 )
 public interface KeycloakClient {
 
-    //admin token generation
+    //admin/user token generation
     @PostExchange(value = "/realms/{realm}/protocol/openid-connect/token", contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     ResponseEntity<Object> getToken(
             @PathVariable String realm,

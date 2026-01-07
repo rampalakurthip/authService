@@ -36,4 +36,11 @@ public class UserController {
         UserResponse created = userService.registerUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
+
+    @GetMapping("/me")
+    public UserResponse getCurrentUser(
+            @RequestHeader("Authorization") String authHeader) {
+        return userService.findByKeycloakUserId(authHeader);
+    }
 }
+

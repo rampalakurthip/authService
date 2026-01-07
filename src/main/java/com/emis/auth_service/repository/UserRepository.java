@@ -24,6 +24,7 @@ public interface UserRepository extends JpaRepository<UserModel, UUID> {
         return findByUsernameIgnoreCase(usernameOrEmail)
                 .or(() -> findByLoginEmailIgnoreCase(usernameOrEmail));
     }
+    Optional<UserModel> findByUserId(String userId);
 
     // ✅ NEW: For activeUsers count in RoleService
     @Query("SELECT COUNT(u) FROM UserModel u WHERE u.status = :status")

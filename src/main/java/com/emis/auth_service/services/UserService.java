@@ -8,4 +8,5 @@ import org.springframework.data.domain.Pageable;
 public interface UserService {
     UserResponse registerUser(UserRegisterRequest request);
     UserListResponse getUsers(String search, String role, String status, Pageable pageable);
+    UserResponse findByKeycloakUserId(String authHeader);
 }

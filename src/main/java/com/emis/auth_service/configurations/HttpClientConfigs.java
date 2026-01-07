@@ -11,4 +11,5 @@ import org.springframework.web.service.registry.ImportHttpServices;
         group = "keycloak-client"
 )
 public class HttpClientConfigs {
+
 }
