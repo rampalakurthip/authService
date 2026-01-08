@@ -3,6 +3,7 @@ package com.emis.auth_service.controller;
 import com.emis.auth_service.dto.request.ForgotPasswordRequest;
 import com.emis.auth_service.dto.request.LoginRequest;
 import com.emis.auth_service.dto.request.ResetPasswordRequest;
+import com.emis.auth_service.dto.response.AuthBaseResponse;
 import com.emis.auth_service.dto.response.ResetPasswordResponse;
 import com.emis.auth_service.dto.response.TokenResponse;
 import com.emis.auth_service.dto.response.ForgotPasswordResponse;
@@ -24,16 +25,24 @@ public class AuthController {
 
     // POST /api/v1/auth/login
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request) {
+    public AuthBaseResponse<TokenResponse> login(@RequestBody LoginRequest request) {
         TokenResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+        return AuthBaseResponse.<TokenResponse>builder()
+                .data(response)
+                .message("Login successful")
+                .status(200)
+                .build();
     }
 
     // POST /api/v1/auth/refresh
     @PostMapping("/refresh")
-    public ResponseEntity<TokenResponse> refresh(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
+    public AuthBaseResponse<TokenResponse> refresh(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         TokenResponse response = authService.refresh(authHeader);
-        return ResponseEntity.ok(response);
+        return AuthBaseResponse.<TokenResponse>builder()
+                .data(response)
+                .message("Token refreshed successfully")
+                .status(200)
+                .build();
     }
 
     // POST /api/v1/auth/forgot-password
