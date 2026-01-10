@@ -5,6 +5,7 @@ import com.emis.auth_service.services.impl.UserRoleServiceImpl;
 import com.emis.auth_service.dto.request.RoleCreateRequest;
 import com.emis.auth_service.dto.response.RoleListResponse;
 import com.emis.auth_service.dto.response.RoleResponse;
+import com.emis.auth_service.utils.Authorize;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,6 +40,7 @@ public class UserRoleController {
      * Creates a role and returns created role as in your example.
      */
     @PostMapping
+    @Authorize()
     public AuthBaseResponse<RoleResponse> createRole(@Valid @RequestBody RoleCreateRequest request) {
         RoleResponse createdRole = roleService.createRole(request);
         return AuthBaseResponse.<RoleResponse>builder()

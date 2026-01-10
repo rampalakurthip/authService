@@ -3,13 +3,12 @@ package com.emis.auth_service.controller;
 import com.emis.auth_service.dto.request.ForgotPasswordRequest;
 import com.emis.auth_service.dto.request.LoginRequest;
 import com.emis.auth_service.dto.request.ResetPasswordRequest;
-import com.emis.auth_service.dto.response.AuthBaseResponse;
-import com.emis.auth_service.dto.response.ResetPasswordResponse;
-import com.emis.auth_service.dto.response.TokenResponse;
-import com.emis.auth_service.dto.response.ForgotPasswordResponse;
+import com.emis.auth_service.dto.response.*;
 
 import com.emis.auth_service.services.AuthService;
 import com.emis.auth_service.services.PasswordResetService;
+import com.emis.auth_service.utils.Authorize;
+import com.emis.auth_service.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -59,6 +58,17 @@ public class AuthController {
 
         ResetPasswordResponse response = passwordResetService.resetPassword(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/user-context")
+    @Authorize()
+   // @Authorize(requireRoles = true, roles = {"ADMIN", "MANAGER", "USER"})
+    public AuthBaseResponse<UserContextDTO> getUserContext() {
+        return AuthBaseResponse.<UserContextDTO>builder()
+                .data(SecurityUtils.getUserContext())
+                .message("User context retrieved successfully")
+                .status(200)
+                .build();
     }
 
 }

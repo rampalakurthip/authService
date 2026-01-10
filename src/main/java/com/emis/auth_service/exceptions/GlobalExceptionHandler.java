@@ -67,4 +67,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
+    @ExceptionHandler(AuthAspectException.class)
+    public ResponseEntity<AuthBaseResponse<?>> authAspectException(AuthAspectException ex) {
+        AuthBaseResponse<Object> response = AuthBaseResponse.builder()
+                .data(null)
+                .errorMessage("UNAUTHORIZED")
+                .errorDescription(ex.getMessage())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
 }
